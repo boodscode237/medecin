@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyseur Interactif des Coûts d'Études en Médecine en Russie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Academia -->
+    <!-- Application Structure Plan: The application is designed as an interactive dashboard to facilitate comparison and exploration, a significant improvement over the static report format. The structure includes: 1. A global control panel (filters for university, study level, currency). 2. A central dynamic bar chart for visual cost comparison. 3. A detailed information panel that updates based on user selections, providing specifics for each university. 4. A dedicated section analyzing living costs with a donut chart. 5. A final total annual cost estimator tool. This task-oriented design allows users to move from broad comparison to specific details seamlessly, directly answering their key questions about affordability and program options. -->
+    <!-- Visualization & Content Choices: 1. University Cost Comparison: An interactive bar chart (Chart.js) is used to compare tuition fees. Goal: Direct comparison. Interaction: Filters update the chart data; tooltips show precise costs. Justification: Bar charts excel at comparing discrete values across categories. 2. Living Cost Breakdown: A donut chart (Chart.js) shows the proportion of different expenses. Goal: Inform about non-tuition costs. Justification: Ideal for part-to-whole relationships. 3. Detailed Data: Dynamically updated HTML text blocks present specific university information. Goal: Provide context on demand. Interaction: Content changes based on filter selection. Justification: Avoids information overload by showing only relevant details. 4. Total Cost Estimator: A dropdown-driven numerical output. Goal: Provide a final, actionable budget figure. Justification: Clear, direct answer to the user's primary question. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
