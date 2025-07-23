@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyseur Interactif des Coûts d'Études en Médecine en Russie</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF6;
+            color: #3C3633;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #7C9D96;
+            color: #FDFBF6;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #7C9D96;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#3C3633] mb-4">Étudier la Médecine en Russie</h1>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">Un analyseur interactif pour explorer les frais de scolarité et les coûts de la vie pour les étudiants étrangers.</p>
+        </header>
+
+        <main>
+            <!-- Section de Contrôle -->
+            <section id="controls" class="mb-12 p-6 bg-white rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-6 text-center">Tableau de Bord Interactif</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <div class="md:col-span-2">
+                        <label for="university-select" class="block text-sm font-medium text-gray-700 mb-2">Choisissez une université pour voir les détails :</label>
+                        <select id="university-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C9D96] focus:border-[#7C9D96]">
+                            <option value="all">Toutes les universités (comparaison)</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col items-center">
+                         <label class="block text-sm font-medium text-gray-700 mb-2">Afficher les coûts en :</label>
+                        <div class="flex items-center space-x-4">
+                            <span class="font-semibold">RUB</span>
+                            <label class="switch">
+                                <input type="checkbox" id="currency-toggle">
+                                <span class="slider"></span>
+                            </label>
+                            <span class="font-semibold">XOF</span>
+                        </div>
+                    </div>
+                </div>
+                 <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 text-center">Filtrer par niveau d'étude :</label>
+                    <div id="level-buttons" class="flex flex-wrap justify-center gap-3">
+                        <button data-level="specialite" class="nav-button px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold">Spécialité</button>
+                        <button data-level="ordinatura" class="nav-button px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold">Ordinatura</button>
+                        <button data-level="aspirantura" class="nav-button px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold">Aspirantura</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section de Visualisation Principale -->
+            <section id="main-viz" class="mb-12 p-6 bg-white rounded-2xl shadow-lg">
+                <h2 id="chart-title" class="text-2xl font-bold mb-2 text-center">Comparaison des Frais de Scolarité</h2>
+                <p id="chart-subtitle" class="text-center text-gray-600 mb-6">Frais annuels pour les étudiants étrangers.</p>
+                <div class="chart-container">
+                    <canvas id="tuitionChart"></canvas>
+                </div>
+            </section>
+            
+            <!-- Section d'Information Détaillée -->
+            <section id="details-section" class="mb-12 p-6 bg-white rounded-2xl shadow-lg min-h-[200px]">
+                 <div id="details-content" class="prose max-w-none">
+                    <h2 class="text-2xl font-bold mb-4 text-center">Détails par Université</h2>
+                    <p class="text-center text-gray-500">Sélectionnez une université dans le menu déroulant ci-dessus pour afficher des informations détaillées ici, y compris les coûts spécifiques des programmes et les années académiques correspondantes.</p>
+                </div>
+            </section>
+
+            <!-- Section Coûts de la Vie -->
+            <section id="living-costs" class="mb-12 p-6 bg-white rounded-2xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4">Analyse des Dépenses de Vie Mensuelles</h2>
+                        <p class="text-gray-600 mb-4">
+                            Comprendre le coût de la vie est essentiel pour budgétiser vos études. Ce graphique illustre une estimation des dépenses mensuelles pour un étudiant à Veliky Novgorod, une ville au coût de la vie abordable. Les coûts dans les grandes villes comme Saint-Pétersbourg ou Moscou seront probablement plus élevés.
+                        </p>
+                        <div id="living-cost-summary" class="text-lg font-semibold"></div>
+                         <p class="text-sm text-gray-500 mt-4">Taux de conversion approximatif utilisé : 1 RUB ≈ 7 XOF.</p>
+                    </div>
+                    <div class="chart-container h-64 md:h-80">
+                        <canvas id="livingCostsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section Estimateur de Coût Total -->
+            <section id="total-estimator" class="p-8 bg-[#7C9D96] text-white rounded-2xl shadow-xl">
+                <h2 class="text-3xl font-bold text-center mb-6">Estimez Votre Budget Annuel Total</h2>
+                <div class="max-w-md mx-auto">
+                    <label for="estimator-university-select" class="block font-medium mb-2">1. Choisissez une université :</label>
+                    <select id="estimator-university-select" class="w-full p-3 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-white">
+                    </select>
+                    <div class="mt-6 p-6 bg-white/20 rounded-lg text-center">
+                        <p class="text-lg mb-2">Budget annuel total estimé :</p>
+                        <div id="total-cost-result" class="text-4xl font-bold">...</div>
+                        <p class="text-sm mt-2 opacity-80">(Frais de scolarité pour la Médecine Générale + Coûts de vie estimés)</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Données basées sur le "Rapport d'Information Détaillé sur les Études de Médecine en Russie" pour les années académiques 2024-2025 et 2025-2026.</p>
+            <p>Les coûts sont des estimations et peuvent être sujets à changement. Veuillez consulter les sites officiels des universités pour les informations les plus récentes.</p>
+        </footer>
+    </div>
+
+    <script>
+        const RUB_TO_XOF_RATE = 7;
+
+        const formatCurrency = (value, currency) => {
+            const number = Math.round(value);
+            const options = { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
+            if (currency === 'XOF') {
+                 return number.toLocaleString('fr-FR') + ' XOF';
+            }
+            return number.toLocaleString('fr-FR') + ' RUB';
+        };
+
+        const data = {
+            universities: {
+                bsmu: {
+                    name: "Université d'État de Médecine de Bachkirie",
+                    city: "Oufa",
+                    year: "2025-2026",
+                    costs: {
+                        specialite: {
+                            "Médecine Générale": { rub: 399120, note: "Avec langue intermédiaire" },
+                            "Stomatologie": { rub: 490080, note: "Avec langue intermédiaire" },
+                            "Pharmacie": { rub: 279648, note: "Avec langue intermédiaire" },
+                            "Pédiatrie": { rub: 283848, note: "Russe/CEI" }
+                        },
+                        ordinatura: {
+                            "Général": { rub: 366000, note: "Pour étrangers" },
+                        },
+                        aspirantura: {
+                            "Général": { rub: 376200, note: "Pour étrangers" },
+                        }
+                    }
+                },
+                ksmu: {
+                    name: "Université d'État de Médecine de Kazan",
+                    city: "Kazan",
+                    year: "2025-2026",
+                    costs: {
+                        specialite: {
+                            "Médecine Générale": { rub: 600000 },
+                            "Pédiatrie": { rub: 400000 },
+                            "Stomatologie": { rub: 600000 },
+                            "Pharmacie": { rub: 294000 }
+                        },
+                        ordinatura: {
+                            "Anesthésiologie": { rub: 312200 },
+                            "Obstétrique/Gynécologie": { rub: 350000 }
+                        },
+                        aspirantura: {
+                            "Physiologie humaine": { rub: 310750 },
+                            "Otorhinolaryngologie": { rub: 312200 }
+                        }
+                    }
+                },
+                asmu: {
+                    name: "Université d'État de Médecine de l'Altaï",
+                    city: "Barnaoul",
+                    year: "2024-2025",
+                    costs: {
+                        specialite: {
+                            "Médecine Générale": { rub: 310700, note: "Avec langue intermédiaire" },
+                            "Pédiatrie": { rub: 216400, note: "En russe" },
+                            "Stomatologie": { rub: 353000, note: "Avec langue intermédiaire" },
+                            "Pharmacie": { rub: 321100, note: "Avec langue intermédiaire" }
+                        },
+                        ordinatura: {
+                            "Obstétrique/Gynécologie": { rub: 246400, note: "Russe/CEI, 2e année" },
+                             "Dermatovénérologie": { rub: 364700, note: "Russe/CEI, 2e année" }
+                        },
+                        aspirantura: {
+                            "Général": { rub: 251500, note: "En russe" }
+                        }
+                    }
+                },
+                rsmu: {
+                    name: "Université d'État de Médecine de Riazan",
+                    city: "Riazan",
+                    year: "2024-2025",
+                    costs: {
+                        specialite: {
+                            "Médecine Générale": { rub: 345000, note: "Avec interprète" },
+                            "Pédiatrie": { rub: 345000, note: "Avec interprète" },
+                            "Stomatologie": { rub: 395000, note: "Avec interprète" },
+                            "Pharmacie": { rub: 324000, note: "Avec interprète" }
+                        },
+                        ordinatura: {
+                            "Obstétrique/Gynécologie": { rub: 318000 },
+                            "Autres spécialités": { rub: 283000 }
+                        },
+                        aspirantura: {
+                            "Toutes spécialités": { rub: 418000 }
+                        }
+                    }
+                },
+                spbu: {
+                    name: "Université d'État de Saint-Pétersbourg",
+                    city: "Saint-Pétersbourg",
+                    year: "2024-2025",
+                    costs: {
+                        specialite: {
+                            "Médecine Générale": { rub: 470000, note: "Estimation basse" },
+                            "Médecine Dentaire": { rub: 470000, note: "Estimation basse" }
+                        },
+                        ordinatura: {
+                            "Obstétrique/Gynécologie": { rub: 377000 },
+                            "Stomatologie Thérapeutique": { rub: 424400 }
+                        },
+                        aspirantura: {
+                            "Otorhinolaryngologie": { rub: 379800 },
+                            "Stomatologie": { rub: 391900 }
+                        }
+                    }
+                }
+            },
+            livingCosts: {
+                "Dortoir": 1449,
+                "Nourriture": 7587,
+                "Transport": 1270,
+                "Internet/Mobile": 800,
+                "Loisirs": 4000
+            }
+        };
+
+        let tuitionChart, livingCostsChart;
+        let currentCurrency = 'RUB';
+        let currentLevel = 'specialite';
+
+        const universitySelect = document.getElementById('university-select');
+        const estimatorSelect = document.getElementById('estimator-university-select');
+        const currencyToggle = document.getElementById('currency-toggle');
+        const levelButtons = document.getElementById('level-buttons');
+        const detailsContent = document.getElementById('details-content');
+        const totalCostResult = document.getElementById('total-cost-result');
+        const chartTitle = document.getElementById('chart-title');
+        const chartSubtitle = document.getElementById('chart-subtitle');
+
+        function populateSelectors() {
+            Object.keys(data.universities).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = data.universities[key].name;
+                universitySelect.appendChild(option.cloneNode(true));
+                estimatorSelect.appendChild(option);
+            });
+        }
+
+        function updateDetails(uniKey) {
+            if (uniKey === 'all') {
+                detailsContent.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4 text-center">Détails par Université</h2>
+                    <p class="text-center text-gray-500">Sélectionnez une université dans le menu déroulant ci-dessus pour afficher des informations détaillées ici, y compris les coûts spécifiques des programmes et les années académiques correspondantes.</p>`;
+                return;
+            }
+            const uni = data.universities[uniKey];
+            let html = `<h2 class="text-2xl font-bold mb-4">${uni.name} (${uni.city})</h2>`;
+            html += `<p class="mb-4 text-gray-600">Frais de scolarité pour l'année académique ${uni.year}.</p>`;
+            
+            html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+
+            Object.keys(uni.costs).forEach(level => {
+                 html += `<div class="border p-4 rounded-lg">`;
+                 html += `<h4 class="font-bold text-lg capitalize mb-2">${level}</h4><ul>`;
+                 Object.entries(uni.costs[level]).forEach(([spec, details]) => {
+                     const cost = currentCurrency === 'RUB' ? details.rub : details.rub * RUB_TO_XOF_RATE;
+                     html += `<li class="mb-1">${spec}: <span class="font-semibold">${formatCurrency(cost, currentCurrency)}</span> ${details.note ? `<em>(${details.note})</em>` : ''}</li>`;
+                 });
+                 html += `</ul></div>`;
+            });
+
+            html += `</div>`;
+            detailsContent.innerHTML = html;
+        }
+        
+        function updateTuitionChart() {
+            const selectedSpecialization = "Médecine Générale";
+            const labels = [];
+            const chartData = [];
+
+            Object.values(data.universities).forEach(uni => {
+                if(uni.costs[currentLevel] && uni.costs[currentLevel][selectedSpecialization]) {
+                    labels.push(uni.name);
+                    const cost = uni.costs[currentLevel][selectedSpecialization].rub;
+                    chartData.push(currentCurrency === 'RUB' ? cost : cost * RUB_TO_XOF_RATE);
+                } else if (currentLevel !== 'specialite' && uni.costs[currentLevel]) {
+                    // Fallback to the first available specialization for other levels
+                    const firstSpec = Object.keys(uni.costs[currentLevel])[0];
+                    if(firstSpec) {
+                        labels.push(`${uni.name} (${firstSpec})`);
+                        const cost = uni.costs[currentLevel][firstSpec].rub;
+                        chartData.push(currentCurrency === 'RUB' ? cost : cost * RUB_TO_XOF_RATE);
+                    }
+                }
+            });
+
+            tuitionChart.data.labels = labels;
+            tuitionChart.data.datasets[0].data = chartData;
+            tuitionChart.data.datasets[0].label = `Coût annuel en ${currentCurrency}`;
+            tuitionChart.options.scales.y.title.text = `Coût en ${currentCurrency}`;
+            
+            let titleText = `Comparaison des Frais de Scolarité (${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)})`;
+            let subtitleText = `Frais annuels pour les étudiants étrangers. Spécialisation affichée : ${selectedSpecialization} (ou équivalent).`;
+            if (currentLevel !== 'specialite') {
+                subtitleText = `Frais annuels pour les étudiants étrangers. Affichage d'une spécialisation représentative par université.`
+            }
+
+            chartTitle.textContent = titleText;
+            chartSubtitle.textContent = subtitleText;
+
+            tuitionChart.update();
+        }
+
+        function createTuitionChart() {
+            const ctx = document.getElementById('tuitionChart').getContext('2d');
+            tuitionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: `Coût annuel en ${currentCurrency}`,
+                        data: [],
+                        backgroundColor: 'rgba(124, 157, 150, 0.6)',
+                        borderColor: 'rgba(124, 157, 150, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y, currentCurrency);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: `Coût en ${currentCurrency}`
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value / 1000000) + 'M';
+                                    if (value >= 1000) return (value / 1000) + 'K';
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createLivingCostsChart() {
+            const ctx = document.getElementById('livingCostsChart').getContext('2d');
+            const labels = Object.keys(data.livingCosts);
+            const chartData = Object.values(data.livingCosts);
+            const totalMonthlyCost = chartData.reduce((a, b) => a + b, 0);
+            
+            document.getElementById('living-cost-summary').textContent = `Total mensuel estimé : ${formatCurrency(totalMonthlyCost, 'RUB')} / ${formatCurrency(totalMonthlyCost * RUB_TO_XOF_RATE, 'XOF')}`;
+
+            livingCostsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Dépenses mensuelles',
+                        data: chartData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                        ],
+                        borderColor: '#FDFBF6',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.parsed;
+                                    label += formatCurrency(value, 'RUB');
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTotalCost() {
+            const uniKey = estimatorSelect.value;
+            if (!uniKey) return;
+            
+            const uni = data.universities[uniKey];
+            const tuitionCost = uni.costs.specialite["Médecine Générale"]?.rub || 0;
+            const livingCostAnnual = Object.values(data.livingCosts).reduce((a, b) => a + b, 0) * 10; // 10 months
+            const totalCost = tuitionCost + livingCostAnnual;
+
+            totalCostResult.textContent = formatCurrency(totalCost, currentCurrency);
+        }
+
+        function handleLevelChange(e) {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelectorAll('#level-buttons button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentLevel = e.target.dataset.level;
+                updateTuitionChart();
+            }
+        }
+
+        // Event Listeners
+        universitySelect.addEventListener('change', (e) => updateDetails(e.target.value));
+        estimatorSelect.addEventListener('change', updateTotalCost);
+        currencyToggle.addEventListener('change', (e) => {
+            currentCurrency = e.target.checked ? 'XOF' : 'RUB';
+            updateTuitionChart();
+            updateDetails(universitySelect.value);
+            updateTotalCost();
+        });
+        levelButtons.addEventListener('click', handleLevelChange);
+
+        // Initialisation
+        window.onload = () => {
+            populateSelectors();
+            createTuitionChart();
+            createLivingCostsChart();
+            document.querySelector('#level-buttons button').classList.add('active');
+            updateTuitionChart();
+            updateTotalCost();
+        };
+    </script>
+</body>
+</html>
